@@ -1,4 +1,5 @@
 .env
+!.env.example
 
 bin/
 obj/
@@ -10,3 +11,5 @@ obj/
 
 TestResults/
 *.log
+
+api/node_modules/

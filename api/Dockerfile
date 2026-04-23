@@ -1,12 +1,13 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-COPY Api.csproj ./
-RUN dotnet restore
-COPY . ./
-RUN dotnet publish -c Release -o /app/publish
-
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM node:20-alpine AS deps
 WORKDIR /app
-COPY --from=build /app/publish ./
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY src ./src
+COPY package*.json ./
 EXPOSE 3000
-ENTRYPOINT ["dotnet", "Api.dll"]
+CMD ["npm", "start"]

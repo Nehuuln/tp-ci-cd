@@ -1,0 +1,14 @@
+{
+  "name": "tp-ci-cd-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node -e \"console.log('No tests configured')\""
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongodb": "^6.16.0"
+  }
+}
