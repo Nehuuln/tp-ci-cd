@@ -1,58 +1,32 @@
-using MongoDB.Bson;
-using MongoDB.Driver;
+using TpApi.Data;
+using TpApi.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<MongoContext>();
+builder.Services.AddSingleton<UserService>();
+
 WebApplication app = builder.Build();
 
-string host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
-string port = Environment.GetEnvironmentVariable("DB_PORT") ?? "27017";
-string dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "appdb";
-string user = Environment.GetEnvironmentVariable("DB_USER") ?? "appuser";
-string pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "mypassword";
-
-string mongoUri = $"mongodb://{Uri.EscapeDataString(user)}:{Uri.EscapeDataString(pass)}@{host}:{port}/{dbName}?authSource=admin";
-MongoClient client = new MongoClient(mongoUri);
-IMongoDatabase db = client.GetDatabase(dbName);
-IMongoCollection<BsonDocument> users = db.GetCollection<BsonDocument>("users");
-
-app.MapGet("/health", async () =>
+app.MapGet("/health", async (MongoContext ctx) =>
 {
-    try
-    {
-        await db.RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1));
-        return Results.Ok(new { status = "ok", db = "ok" });
-    }
-    catch
-    {
-        return Results.StatusCode(503);
-    }
+    bool ok = await ctx.PingAsync();
+    return ok ? Results.Ok(new { status = "ok", db = "ok" }) : Results.StatusCode(503);
 });
 
-app.MapPost("/users", async (UserDto body) =>
+app.MapPost("/users", async (UserDto body, UserService service) =>
 {
     if (string.IsNullOrWhiteSpace(body.Name) || string.IsNullOrWhiteSpace(body.Email))
         return Results.BadRequest(new { error = "name and email are required" });
 
-    BsonDocument doc = new BsonDocument
-    {
-        { "name", body.Name },
-        { "email", body.Email },
-        { "createdAt", DateTime.UtcNow }
-    };
-
-    await users.InsertOneAsync(doc);
-    return Results.Created($"/users/{doc["_id"]}", new { id = doc["_id"].ToString() });
+    string id = await service.CreateAsync(body.Name, body.Email);
+    return Results.Created($"/users/{id}", new { id });
 });
 
-app.MapGet("/users", async () =>
+app.MapGet("/users", async (UserService service) =>
 {
-    List<BsonDocument> list = await users.Find(FilterDefinition<BsonDocument>.Empty).Limit(50).ToListAsync();
-    return Results.Ok(list.Select(x => new
-    {
-        id = x.GetValue("_id").ToString(),
-        name = x.GetValue("name", "").AsString,
-        email = x.GetValue("email", "").AsString
-    }));
+    IEnumerable<object> users = await service.GetAllAsync();
+    return Results.Ok(users);
 });
 
 app.Run("http://0.0.0.0:3000");
