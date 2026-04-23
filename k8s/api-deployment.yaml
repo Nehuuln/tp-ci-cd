@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/OWNER/REPO/api:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: DB_HOST
+              value: mongo
+            - name: DB_PORT
+              value: "27017"
+            - name: DB_NAME
+              value: appdb
+            - name: DB_USER
+              value: appuser
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+            - name: DB_TYPE
+              value: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: app
+spec:
+  type: NodePort
+  selector:
+    app: api
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30080
