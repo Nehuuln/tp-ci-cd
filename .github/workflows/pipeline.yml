@@ -1,5 +1,4 @@
-name: CI-CD
-
+name: PIPELINE
 on:
   push:
     branches: ["main"]
@@ -59,8 +58,8 @@ jobs:
           script: |
             cd ~/maxime-ye_tp_cicd
             git pull
-            kubectl apply -f k8s/db-deployment.yaml
             kubectl -n app create secret generic db-secret --from-literal=DB_PASSWORD='${{ secrets.DB_PASSWORD }}' --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -f k8s/db-deployment.yaml
             kubectl apply -f k8s/api-deployment.yaml
             kubectl -n app set image deployment/api api=nehuuln/tp-ci-cd-api:${{ github.sha }}
             kubectl -n app rollout status deployment/api

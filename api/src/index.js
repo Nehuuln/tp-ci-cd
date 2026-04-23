@@ -9,7 +9,11 @@ const dbHost = process.env.DB_HOST || "localhost";
 const dbPort = process.env.DB_PORT || "27017";
 const dbName = process.env.DB_NAME || "appdb";
 const dbUser = process.env.DB_USER || "appuser";
-const dbPassword = process.env.DB_PASSWORD || "mypassword";
+const dbPassword = process.env.DB_PASSWORD;
+
+if (!dbPassword) {
+  throw new Error("Missing required environment variable DB_PASSWORD");
+}
 
 const mongoUri = `mongodb://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${dbName}?authSource=admin`;
 
